@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hamming Kodu Simülatörü</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.4/css/bulma.min.css">
+    <style>
+        /* Genel Arayüz */
+        body { background-color: #f0f4f8; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        
+        /* Soft yeşil başlık */
+        .title.has-text-primary { color: #81c784 !important; }
+
+        .box { 
+            border-radius: 25px !important; 
+            box-shadow: 0 15px 35px rgba(0,0,0,0.08) !important; 
+            padding: 2rem !important;
+        }
+
+        .bit-kutusu {
+            border-radius: 15px !important;
+            padding: 15px !important;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 6px 10px rgba(0,0,0,0.1);
+        }
+
+        .bit-kutusu:hover { 
+            transform: translateY(-10px) scale(1.05); 
+            box-shadow: 0 15px 25px rgba(0,0,0,0.15); 
+        }
+
+        /* Renkler: Pembe Parite, Mavi Veri */
+        .kontrol-bit-rengi { background-color: #f8bbd0 !important; color: #880e4f !important; border: none; }
+        .veri-bit-rengi { background-color: #bbdefb !important; color: #0d47a1 !important; border: none; }
+        
+        .hata-bit-rengi { 
+            background-color: #ff5252 !important; 
+            color: white !important; 
+            animation: pulse 1.2s infinite alternate; 
+        }
+
+        @keyframes pulse {
+            from { box-shadow: 0 0 5px #fc8181; }
+            to { box-shadow: 0 0 20px #e53e3e; }
+        }
+
+        .button.is-link { 
+            border-radius: 50px; 
+            padding: 0 2rem; 
+            background-color: #81c784 !important; 
+            border: none;
+        }
+
+        /* Bilgilendirme Kutusu */
+        .bilgi-kutusu {
+            background-color: #ffffff;
+            border-radius: 20px;
+            padding: 20px;
+            margin-top: 20px;
+            border-left: 6px solid #81c784;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+    </style>
+</head>
+<body>
+    <section class="section">
+        <div class="container">
+            <h1 class="title has-text-centered has-text-primary">Hamming Kodu Simülatörü</h1>
+            
+            <div class="columns is-centered">
+                <div class="column is-6">
+                    <div class="box">
+                        <div class="field">
+                            <label class="label">Veri Bit Uzunluğu (M):</label>
+                            <div class="select is-fullwidth is-rounded">
+                                <select id="bitLength" onchange="simulasyonReset()">
+                                    <option value="8">8 Bit Veri</option>
+                                    <option value="16">16 Bit Veri</option>
+                                    <option value="32">32 Bit Veri</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="field">
+                            <label class="label">Giriş Verisi (Binary):</label>
+                            <input id="veriInput" class="input is-rounded" type="text" placeholder="Örn: 10110010">
+                            <p class="help" id="yardımcıMetin">Lütfen veri girin.Sadece 0 ve 1 içeren seçilen veri uzunluğunda olmalıdır.</p>
+                        </div>
+                        <button class="button is-link is-fullwidth is-medium" onclick="veriyiYaz()">Hamming Kodu Oluştur</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="box mt-5" id="simulasyon" style="display: none;">
+                <h2 class="title is-4 has-text-centered">Görselleştirme</h2>
+                <div id="hammingTablosuGovdesi" class="columns is-mobile is-multiline is-centered"></div>
+                <hr>
+                <div class="columns">
+                    <div class="column is-5"><div class="notification is-white"><p class="heading">Parite</p><p id="yeniHesaplananKontrolBitleri" class="has-text-weight-bold">-</p></div></div>
+                    <div class="column is-5"><div class="notification is-white"><p class="heading">Sendrom</p><p id="sendromSonucu" class="has-text-weight-bold">-</p></div></div>
+                    <div class="column is-5"><div class="notification is-white"><p class="heading">Sonuç</p><p id="duzeltilmisHammingKodu" class="has-text-weight-bold">-</p></div></div>
+                </div>
+                <h3 id="durumMesaji" class="title is-5 has-text-centered"></h3>
+            </div>
+
+            <div class="bilgi-kutusu">
+                <h4 class="title is-5">💡 Hamming Kodu Nasıl Çalışır?</h4>
+                <p>Hamming kodu, bellekteki verilerin bütünlüğünü korumak için kullanılan bir <b>hata düzeltme (ECC)</b> yöntemidir. Sistemin temel çalışma prensibi şu şekildedir:</p>
+    <ul style="margin-left: 20px; list-style-type: square; margin-top: 10px;">
+        <li><b>Kodlama:</b> Veri bitlerine (D) belirli pozisyonlarda <b>kontrol bitleri (P)</b> eklenir. Bu bitler, veri içindeki "1"lerin toplamına göre hesaplanır ve verinin "paritesini" belirler.</li>
+        <li><b>Hata Tespiti:</b> Veri okunduğunda sistem, kontrol bitlerini tekrar hesaplar. Eğer hesaplanan değer ile depolanan değer farklıysa, aradaki farktan bir <b>sendrom</b> değeri üretilir.</li>
+        <li><b>Düzeltme:</b> Bu sendrom değeri, hatalı bitin tam konumunu (indeksini) işaret eder. <b>Corrector</b> birimi bu konumu kullanarak hatalı biti tersler (0 ise 1, 1 ise 0 yapar) ve veriyi hatasız, orijinal haline getirir.</li>
+    </ul>
+    <p style="margin-top: 10px;"><i>Not: Bu simülasyon, 8, 16 ve 32 bitlik veriler üzerinde Hamming fonksiyonunu "Compare" ve "Corrector" birimleri aracılığıyla uçtan uca simüle etmektedir.</i></p>
+                <ul style="margin-left: 20px; list-style-type: square; margin-top: 10px;">
+                    <li><b>Pembe (P)</b> kutucuklar, verinin doğruluğunu kontrol eden <b>parite bitleridir</b>.</li>
+                    <li><b>Mavi (D)</b> kutucuklar, gönderdiğiniz orijinal <b>veri bitlerini</b> temsil eder.</li>
+                    <li>Hata oluşturmak için bir bit kutusuna tıklayın. Sistem otomatik olarak hatayı tespit eder ve sendrom analizi ile düzeltir.</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <script src="hammingsimulasyon.js"></script>
+</body>
+</html>
